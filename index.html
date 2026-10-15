@@ -43,15 +43,23 @@ section{padding-top:72px}
 .media button span{width:64px;height:64px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
 .media button span::after{content:"";margin-left:5px;border-left:18px solid var(--surface);border-top:11px solid transparent;border-bottom:11px solid transparent}
 .empty{color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:28px}
-.doclist{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-.doclist li{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
-.doclist a{font-weight:600;color:var(--accent)}
-.doclist span{color:var(--muted);font-size:.9rem;white-space:nowrap}
-.doclist .empty{display:block;border:1px dashed var(--line);border-radius:10px;padding:20px}
+.grid .empty{grid-column:1/-1}
+.pv{display:block;width:100%;aspect-ratio:4/5;padding:0;border:0;border-bottom:1px solid var(--line);background:var(--line);cursor:zoom-in;overflow:hidden;position:relative}
+.pv canvas{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.pv.nopv::after{content:"PDF";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:600}
+.linkbtn{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline}
+dialog{width:min(960px,94vw);height:88vh;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.vbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.vbar a{margin-right:16px;color:var(--accent);font-weight:600}
+.vbar button{font:inherit;padding:6px 14px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);cursor:pointer}
+#vframe{flex:1;border:0;width:100%;background:#fff}
 footer{padding:72px 0 56px}
 footer .links{padding:0;margin-top:20px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -81,8 +89,8 @@ footer .links{padding:0;margin-top:20px}
 
     <section id="documents">
       <h2>Documents</h2>
-      <p class="sub">Reports and write-ups as PDFs.</p>
-      <ul class="doclist" id="pdfList"></ul>
+      <p class="sub">Reports and write-ups. Click a page to preview it.</p>
+      <div class="grid" id="pdfList"></div>
     </section>
   </main>
 
@@ -92,6 +100,10 @@ footer .links{padding:0;margin-top:20px}
     <div class="links" id="siteLinks"></div>
   </footer>
 </div>
+<dialog id="viewer" aria-label="PDF preview">
+  <div class="vbar"><strong id="vtitle"></strong><span><a id="vopen" target="_blank" rel="noopener">Open in new tab</a><button id="vclose" type="button">Close</button></span></div>
+  <iframe id="vframe" title="PDF preview"></iframe>
+</dialog>
 <noscript><p class="wrap">This page needs JavaScript to list the projects.</p></noscript>
 
 <script>
@@ -99,7 +111,7 @@ footer .links{padding:0;margin-top:20px}
 const SITE = {
   name: "Your Name",
   headline: "Sensors, signals, and the code that connects them.",
-  intro: "I build with sensors and data. This page collects my projects and demo videos.",
+  intro: "I build with sensors and data. This page collects my reports and write-ups.",
   contact: "Questions or ideas? Reach me here.",
   repo: "Nicholas18396/Portfolio",   /* your GitHub repository, so PDFs in the folder below are listed automatically */
   pdfFolder: "pdfs",
@@ -140,6 +152,8 @@ const VIDEOS = [
 ];
 /* PDFs: drop files into the pdfs/ folder on GitHub and they appear on their own.
    Optional nicer titles, keyed by file name. Without one, the file name is used. */
+/* Set a section to true to bring it back on the page. */
+const SHOW = { projects: false, videos: false };
 const PDF_TITLES = {
   /* "lab-4-processing.pdf": "Lab 4: Metabolic rate processing" */
 };
@@ -189,20 +203,65 @@ document.querySelectorAll("button[data-yt]").forEach(b => b.addEventListener("cl
   b.replaceWith(f);
 }));
 
-/* PDF list: reads the pdfs/ folder from the GitHub repo, so adding a file is enough */
+/* Hide sections you are not using yet */
+for (const k of ["projects", "videos"]) if (!SHOW[k]) {
+  $(k).hidden = true;
+  const l = document.querySelector(`nav a[href="#${k}"]`); if (l) l.hidden = true;
+}
+
+/* PDF cards: reads the pdfs/ folder from the GitHub repo, so adding a file is enough */
 (async function () {
-  const box = $("pdfList");
+  const box = $("pdfList"), dlg = $("viewer");
+  const loaded = document.readyState === "complete" ? Promise.resolve() : new Promise(r => addEventListener("load", r));
   const nice = n => PDF_TITLES[n] || n.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
   const size = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+
+  function openPdf(src, title) {
+    $("vtitle").textContent = title; $("vopen").href = src; $("vframe").src = src; dlg.showModal();
+  }
+  $("vclose").onclick = () => dlg.close();
+  dlg.addEventListener("close", () => { $("vframe").src = "about:blank"; });
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+  box.addEventListener("click", e => {
+    const b = e.target.closest("[data-src]");
+    if (b) openPdf(b.dataset.src, b.dataset.title);
+  });
+
+  async function thumb(btn) {
+    await loaded;
+    if (!window.pdfjsLib) { btn.classList.add("nopv"); return; }
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf = await pdfjsLib.getDocument(btn.dataset.src).promise;
+      const page = await pdf.getPage(1);
+      const w = btn.clientWidth * (devicePixelRatio || 1);
+      const vp = page.getViewport({ scale: w / page.getViewport({ scale: 1 }).width });
+      const cv = btn.querySelector("canvas");
+      cv.width = vp.width; cv.height = vp.height;
+      await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+    } catch (e) { btn.classList.add("nopv"); }
+  }
+
   try {
     if (SITE.repo.startsWith("your-username")) throw new Error("repo not set");
     const r = await fetch(`https://api.github.com/repos/${SITE.repo}/contents/${SITE.pdfFolder}`);
     if (!r.ok) throw new Error(r.status);
     const files = (await r.json()).filter(f => /\.pdf$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name));
     if (!files.length) throw new Error("none");
-    box.innerHTML = files.map(f => `<li><a href="${esc(SITE.pdfFolder)}/${encodeURIComponent(f.name)}">${esc(nice(f.name))}</a><span>${size(f.size)}</span></li>`).join("");
+    box.innerHTML = files.map(f => {
+      const src = `${SITE.pdfFolder}/${encodeURIComponent(f.name)}`, t = nice(f.name);
+      return `<article class="card">
+        <button class="pv" type="button" data-src="${esc(src)}" data-title="${esc(t)}" aria-label="Preview ${esc(t)}"><canvas></canvas></button>
+        <div class="body"><h3>${esc(t)}</h3><p>${size(f.size)}</p>
+          <div class="links"><button class="linkbtn" type="button" data-src="${esc(src)}" data-title="${esc(t)}">Preview</button><a href="${esc(src)}">Open</a></div>
+        </div></article>`;
+    }).join("");
+    const io = new IntersectionObserver(es => es.forEach(en => {
+      if (en.isIntersecting) { io.unobserve(en.target); thumb(en.target); }
+    }), { rootMargin: "200px" });
+    box.querySelectorAll(".pv").forEach(b => io.observe(b));
   } catch (e) {
-    box.innerHTML = `<li class="empty">No PDFs to show yet. Add files to the ${esc(SITE.pdfFolder)} folder and set repo in SITE.</li>`;
+    box.innerHTML = `<p class="empty">No PDFs to show yet. Add files to the ${esc(SITE.pdfFolder)} folder and set repo in SITE.</p>`;
   }
 })();
 
