@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Name | Projects and videos</title>
+<meta name="description" content="Projects and demo videos.">
+<style>
+:root{--bg:#F1F4F7;--surface:#FFFFFF;--ink:#14202B;--muted:#56626E;--line:#D5DCE3;--accent:#2646D9}
+@media (prefers-color-scheme:dark){:root{--bg:#0F161D;--surface:#17212A;--ink:#E7EDF2;--muted:#9AA7B3;--line:#27333E;--accent:#8CA5FF}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:inherit}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0;gap:16px;flex-wrap:wrap}
+.brand{font-weight:650;text-decoration:none}
+.top nav a{margin-left:22px;color:var(--muted);text-decoration:none}
+.top nav a:hover{color:var(--ink);text-decoration:underline}
+h1,h2{font-family:Georgia,"Iowan Old Style","Times New Roman",serif;letter-spacing:-.02em;margin:0}
+h1{font-size:clamp(2.4rem,6.4vw,4.4rem);line-height:1.04;font-weight:700;max-width:16ch;margin-top:56px}
+h2{font-size:1.9rem;line-height:1.2}
+.lead{color:var(--muted);max-width:56ch;margin:20px 0 0;font-size:1.1rem}
+#trace{display:block;width:100%;height:150px;margin-top:36px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+section{padding-top:72px}
+.sub{color:var(--muted);margin:8px 0 28px;max-width:56ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:24px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.card.featured{grid-column:span 2}
+@media (max-width:700px){.card.featured{grid-column:auto}}
+.thumb{aspect-ratio:16/9;background:var(--line);display:block;width:100%;object-fit:cover}
+.thumb.ph{display:grid;place-items:center;color:var(--accent)}
+.body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px;flex:1}
+.card h3{margin:0;font-size:1.2rem;line-height:1.3}
+.card p{margin:0;color:var(--muted);font-size:.98rem}
+.tags{display:flex;flex-wrap:wrap;gap:6px 14px;list-style:none;margin:0;padding:0;font-size:.88rem;color:var(--muted)}
+.links{display:flex;gap:18px;margin-top:auto;padding-top:6px}
+.links a{font-weight:600;color:var(--accent)}
+.media{position:relative;aspect-ratio:16/9;background:#000}
+.media video,.media iframe,.media button{position:absolute;inset:0;width:100%;height:100%;border:0}
+.media button{cursor:pointer;background:var(--line) center/cover no-repeat;display:grid;place-items:center;padding:0}
+.media button span{width:64px;height:64px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.media button span::after{content:"";margin-left:5px;border-left:18px solid var(--surface);border-top:11px solid transparent;border-bottom:11px solid transparent}
+.empty{color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:28px}
+.doclist{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.doclist li{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.doclist a{font-weight:600;color:var(--accent)}
+.doclist span{color:var(--muted);font-size:.9rem;white-space:nowrap}
+.doclist .empty{display:block;border:1px dashed var(--line);border-radius:10px;padding:20px}
+footer{padding:72px 0 56px}
+footer .links{padding:0;margin-top:20px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#" id="brand"></a>
+    <nav aria-label="Sections"><a href="#projects">Projects</a><a href="#videos">Videos</a><a href="#documents">Documents</a><a href="#contact">Contact</a></nav>
+  </header>
+
+  <main>
+    <section style="padding-top:0">
+      <h1 id="headline"></h1>
+      <p class="lead" id="intro"></p>
+      <canvas id="trace" aria-hidden="true"></canvas>
+    </section>
+
+    <section id="projects">
+      <h2>Projects</h2>
+      <p class="sub">Things I built, with the code and write-ups.</p>
+      <div class="grid" id="projectGrid"></div>
+    </section>
+
+    <section id="videos">
+      <h2>Videos</h2>
+      <p class="sub">Demos and recordings.</p>
+      <div class="grid" id="videoGrid"></div>
+    </section>
+
+    <section id="documents">
+      <h2>Documents</h2>
+      <p class="sub">Reports and write-ups as PDFs.</p>
+      <ul class="doclist" id="pdfList"></ul>
+    </section>
+  </main>
+
+  <footer id="contact">
+    <h2>Contact</h2>
+    <p class="sub" id="contactText"></p>
+    <div class="links" id="siteLinks"></div>
+  </footer>
+</div>
+<noscript><p class="wrap">This page needs JavaScript to list the projects.</p></noscript>
+
+<script>
+/* ============ EDIT THIS PART ============ */
+const SITE = {
+  name: "Your Name",
+  headline: "Sensors, signals, and the code that connects them.",
+  intro: "I build with sensors and data. This page collects my projects and demo videos.",
+  contact: "Questions or ideas? Reach me here.",
+  repo: "your-username/your-repo",   /* your GitHub repository, so PDFs in the folder below are listed automatically */
+  pdfFolder: "pdfs",
+  links: [
+    { label: "GitHub", href: "https://github.com/your-username" },
+    { label: "Email", href: "mailto:you@example.com" }
+  ]
+};
+
+/* One block per project. image is optional (path like "images/app.png"). */
+const PROJECTS = [
+  {
+    title: "Heart and breath rate from an iPhone",
+    featured: true,
+    description: "A Flutter app records the accelerometer, gyroscope and magnetometer at 200 Hz. Python filters the signals to estimate heart rate and breathing rate.",
+    tags: ["Flutter", "Python", "Signal processing"],
+    image: "",
+    links: [{ label: "View code", href: "#" }]
+  },
+  {
+    title: "Add your next project",
+    description: "Copy a block in PROJECTS, change the text, and save the file.",
+    tags: ["Your tags"],
+    image: "",
+    links: []
+  }
+];
+
+/* Local files go in a videos/ folder. YouTube links also work. poster is optional. */
+const VIDEOS = [
+  {
+    title: "App demo",
+    note: "Recording and viewing live sensor data on the phone.",
+    src: "videos/demo.mp4",
+    poster: ""
+  }
+  /* , { title: "Talk", note: "", src: "https://www.youtube.com/watch?v=XXXXXXXXXXX", poster: "" } */
+];
+/* PDFs: drop files into the pdfs/ folder on GitHub and they appear on their own.
+   Optional nicer titles, keyed by file name. Without one, the file name is used. */
+const PDF_TITLES = {
+  /* "lab-4-processing.pdf": "Lab 4: Metabolic rate processing" */
+};
+/* ============ END OF EDITABLE PART ============ */
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $ = id => document.getElementById(id);
+
+document.title = SITE.name + " | Projects and videos";
+$("brand").textContent = SITE.name;
+$("headline").textContent = SITE.headline;
+$("intro").textContent = SITE.intro;
+$("contactText").textContent = SITE.contact;
+$("siteLinks").innerHTML = SITE.links.map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join("");
+
+const placeholderThumb = `<svg class="thumb ph" viewBox="0 0 320 180" role="img" aria-label="No image yet"><polyline fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" points="10,100 70,100 85,100 95,60 105,140 115,100 160,100 185,88 210,100 250,100 262,100 272,70 282,128 292,100 310,100"/></svg>`;
+
+$("projectGrid").innerHTML = PROJECTS.length ? PROJECTS.map(p => `
+  <article class="card${p.featured ? " featured" : ""}">
+    ${p.image ? `<img class="thumb" src="${esc(p.image)}" alt="" loading="lazy">` : placeholderThumb}
+    <div class="body">
+      <h3>${esc(p.title)}</h3>
+      <p>${esc(p.description)}</p>
+      <ul class="tags">${(p.tags || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul>
+      <div class="links">${(p.links || []).map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join("")}</div>
+    </div>
+  </article>`).join("") : `<p class="empty">No projects yet. Add one to PROJECTS in this file.</p>`;
+
+const ytId = u => { const m = String(u).match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/); return m && m[1]; };
+
+$("videoGrid").innerHTML = VIDEOS.length ? VIDEOS.map((v, i) => {
+  const id = ytId(v.src);
+  const media = id
+    ? `<button type="button" data-yt="${id}" aria-label="Play ${esc(v.title)}" ${v.poster ? `style="background-image:url('${esc(v.poster)}')"` : ""}><span></span></button>`
+    : `<video controls preload="metadata" playsinline ${v.poster ? `poster="${esc(v.poster)}"` : ""} src="${esc(v.src)}"></video>`;
+  return `<article class="card"><div class="media">${media}</div>
+    <div class="body"><h3>${esc(v.title)}</h3>${v.note ? `<p>${esc(v.note)}</p>` : ""}</div></article>`;
+}).join("") : `<p class="empty">No videos yet. Add one to VIDEOS in this file.</p>`;
+
+/* YouTube loads only after a click */
+document.querySelectorAll("button[data-yt]").forEach(b => b.addEventListener("click", () => {
+  const f = document.createElement("iframe");
+  f.src = `https://www.youtube-nocookie.com/embed/${b.dataset.yt}?autoplay=1`;
+  f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+  f.title = b.getAttribute("aria-label").replace(/^Play /, "");
+  f.allowFullscreen = true;
+  b.replaceWith(f);
+}));
+
+/* PDF list: reads the pdfs/ folder from the GitHub repo, so adding a file is enough */
+(async function () {
+  const box = $("pdfList");
+  const nice = n => PDF_TITLES[n] || n.replace(/\.pdf$/i, "").replace(/[-_]+/g, " ");
+  const size = b => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+  try {
+    if (SITE.repo.startsWith("your-username")) throw new Error("repo not set");
+    const r = await fetch(`https://api.github.com/repos/${SITE.repo}/contents/${SITE.pdfFolder}`);
+    if (!r.ok) throw new Error(r.status);
+    const files = (await r.json()).filter(f => /\.pdf$/i.test(f.name)).sort((a, b) => a.name.localeCompare(b.name));
+    if (!files.length) throw new Error("none");
+    box.innerHTML = files.map(f => `<li><a href="${esc(SITE.pdfFolder)}/${encodeURIComponent(f.name)}">${esc(nice(f.name))}</a><span>${size(f.size)}</span></li>`).join("");
+  } catch (e) {
+    box.innerHTML = `<li class="empty">No PDFs to show yet. Add files to the ${esc(SITE.pdfFolder)} folder and set repo in SITE.</li>`;
+  }
+})();
+
+/* Heartbeat trace: a slow breathing wave under a repeating heartbeat */
+(function () {
+  const c = $("trace"), x = c.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let w, h;
+  const beat = p => {
+    const g = (m, s, a) => a * Math.exp(-((p - m) ** 2) / (2 * s * s));
+    return g(.18, .035, .12) - g(.37, .012, .15) + g(.40, .012, 1) - g(.43, .012, .28) + g(.68, .06, .25);
+  };
+  function size() {
+    const d = devicePixelRatio || 1;
+    w = c.clientWidth; h = c.clientHeight;
+    c.width = w * d; c.height = h * d;
+    x.setTransform(d, 0, 0, d, 0, 0);
+  }
+  function draw(t) {
+    x.clearRect(0, 0, w, h);
+    x.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+    x.lineWidth = 2; x.lineJoin = "round";
+    x.beginPath();
+    for (let i = 0; i <= w; i += 2) {
+      const s = t / 1000 + i / 170;
+      const v = beat((s * 1.1) % 1) + .18 * Math.sin(2 * Math.PI * .25 * s);
+      const y = h * .64 - v * h * .5;
+      i ? x.lineTo(i, y) : x.moveTo(i, y);
+    }
+    x.stroke();
+  }
+  size();
+  addEventListener("resize", () => { size(); if (reduce) draw(2000); });
+  if (reduce) draw(2000);
+  else requestAnimationFrame(function loop(t) { draw(t); requestAnimationFrame(loop); });
+})();
+</script>
+</body>
+</html>
